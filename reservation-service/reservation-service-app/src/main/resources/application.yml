@@ -1,0 +1,45 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: reservation-service
+
+  datasource:
+    generate-unique-name: false
+    name: reservation-service
+    url: jdbc:h2:mem:reservation-db
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+management:
+  info:
+    env:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+info:
+  application:
+    name: ${spring.application.name}
+    description: Reservation Service
+    version: '@project.version@'
+
+springdoc:
+  enable-hateoas: false

@@ -1,0 +1,25 @@
+meta {
+  name: Create Table
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/table
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "tableNumber": "0001",
+    "capacity": 6,
+    "isAvailable": true,
+    "restaurantId": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

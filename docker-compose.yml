@@ -1,0 +1,90 @@
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - restaurant-reservation-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - eureka-server
+    networks:
+      - restaurant-reservation-network
+
+  restaurant-service-1:
+    build:
+      context: ./restaurant-service
+      dockerfile: Dockerfile
+    container_name: restaurant-service-1
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_INSTANCEID=restaurant-service-1
+    depends_on:
+      - eureka-server
+    networks:
+      - restaurant-reservation-network
+
+  restaurant-service-2:
+    build:
+      context: ./restaurant-service
+      dockerfile: Dockerfile
+    container_name: restaurant-service-2
+    ports:
+      - "8083:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_INSTANCEID=restaurant-service-2
+    depends_on:
+      - eureka-server
+    networks:
+      - restaurant-reservation-network
+
+  reservation-service-1:
+    build:
+      context: ./reservation-service
+      dockerfile: Dockerfile
+    container_name: reservation-service-1
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_INSTANCEID=reservation-service-1
+    depends_on:
+      - eureka-server
+    networks:
+      - restaurant-reservation-network
+
+  reservation-service-2:
+    build:
+      context: ./reservation-service
+      dockerfile: Dockerfile
+    container_name: reservation-service-2
+    ports:
+      - "8084:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_INSTANCEID=reservation-service-2
+    depends_on:
+      - eureka-server
+    networks:
+      - restaurant-reservation-network
+
+networks:
+  restaurant-reservation-network:
+    driver: bridge

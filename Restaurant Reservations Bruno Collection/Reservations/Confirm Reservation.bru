@@ -1,0 +1,16 @@
+meta {
+  name: Confirm Reservation
+  type: http
+  seq: 7
+}
+
+patch {
+  url: http://localhost:8080/api/reservation/1/confirm
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

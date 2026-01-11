@@ -1,0 +1,16 @@
+meta {
+  name: Complete Reservation
+  type: http
+  seq: 10
+}
+
+patch {
+  url: http://localhost:8080/api/reservation/1/complete
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

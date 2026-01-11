@@ -1,0 +1,16 @@
+meta {
+  name: CheckIn Reservation
+  type: http
+  seq: 9
+}
+
+patch {
+  url: http://localhost:8080/api/reservation/1/checkIn
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

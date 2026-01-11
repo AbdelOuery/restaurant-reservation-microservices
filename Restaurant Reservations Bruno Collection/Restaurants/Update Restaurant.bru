@@ -1,0 +1,25 @@
+meta {
+  name: Update Restaurant
+  type: http
+  seq: 2
+}
+
+put {
+  url: http://localhost:8080/api/restaurant/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "NEW!!! O Tacos",
+    "address": "Avenue du Président Pompidou, Rueil Malmaison",
+    "phone": "0753292887",
+    "email": "otacos.rueil.malmaison@otacos.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

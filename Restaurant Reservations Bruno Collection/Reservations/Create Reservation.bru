@@ -1,0 +1,27 @@
+meta {
+  name: Create Reservation
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8080/api/reservation
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "restaurantId": 1,
+    "customerName": "Abdelbasset",
+    "customerPhone": "0777777777",
+    "date": "2026-01-15",
+    "time": "13:00",
+    "numberOfPeople": 4
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

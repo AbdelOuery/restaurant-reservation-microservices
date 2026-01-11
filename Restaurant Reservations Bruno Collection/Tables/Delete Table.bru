@@ -1,0 +1,25 @@
+meta {
+  name: Delete Table
+  type: http
+  seq: 2
+}
+
+delete {
+  url: http://localhost:8080/api/table/1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "tableNumber": "0001",
+    "capacity": 4,
+    "isAvailable": true,
+    "restaurantId": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

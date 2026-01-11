@@ -1,0 +1,1 @@
+ALTER TABLE restaurant ADD COLUMN is_closed BOOLEAN NOT NULL;

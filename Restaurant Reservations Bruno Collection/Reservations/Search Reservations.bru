@@ -1,0 +1,24 @@
+meta {
+  name: Search Reservations
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/reservation/search
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "restaurantId": 1,
+    "date": "2026-01-15",
+    "time": "13:00:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

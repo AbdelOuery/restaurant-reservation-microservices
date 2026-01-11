@@ -1,0 +1,25 @@
+meta {
+  name: Create Restaurant
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/restaurant
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "OTacos",
+    "address": "Avenue du Président Pompidou, Rueil Malmaison",
+    "phone": "0753292887",
+    "email": "otacos.rueil.malmaison@otacos.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
