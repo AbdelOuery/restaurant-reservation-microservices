@@ -17,6 +17,8 @@ The project is comprised of 4 main components which were placed in the same repo
 - **restaurant-service**: The restaurant microservice
 - **reservation-service**: The reservation system microservice
 
+There is also a postgreSQL container for each service. 
+
 ### 2. Building the components
 
 We can build every project by running the supplied script
@@ -75,11 +77,11 @@ We can run them by executing the following command inside the respective project
 
 ##  Calling the endpoints
 
-The optimal way to test our endpoints by is using the supplied Bruno Collection (contains all the requests), each request goes through the API gateway (http://localhost:8080) and requires a JWT Token as a security measure.
+The optimal way to test our endpoints by is using the supplied Bruno Collection (contains all the requests), each request goes through the API gateway (http://localhost:8080) and gets re-routed to the appropriate service, each requiring a JWT Token as a security measure.
 
-**To acquire a JWT bearer Token, we must call the Authentication endpoint that's exposed on the gateway.**
+To keep it simple, I didn't implement a fully fledged user signup/signin feature, instead I've hardcoded some credentials for convenience.
 
-I've hardcoded some credentials for convenience and to avoid saving users to the database.
+**We can acquire a JWT bearer Token through the following Authentication endpoint that's exposed on the gateway.**
 
 POST: http://localhost:8080/auth/login
 
@@ -90,14 +92,15 @@ POST: http://localhost:8080/auth/login
 }
 ```
 
+
 We could also test every service directly using Swagger UI.
 
 - Restaurant Service: http://localhost:8081/swagger-ui/index.html
 - Reservation Service: http://localhost:8083/swagger-ui/index.html
 
-### Test Scenario
+### Reservation Test Scenario
 
-I have inserted some sample data comprising of some restaurants and tables in the **restaurant-service**, the can make a reservation by calling the **reservation-service** endpoint 
+I have inserted some sample data comprising of some restaurants and tables in the **restaurant-service**, the user can make a reservation by calling the **reservation-service** endpoint, we can then call other endpoints to confirm or cancel the restaurant.
 
 ## Architecture & Technical decisions
 
@@ -121,7 +124,7 @@ The **restaurant-service** will call **reservation-service** to check if the tab
 
 #### Flyway
 
-For database versioning and schema migrations, I chose Flyway over Liquibase because it provides a simple and friendly way to manage database schema changes in a small microservice architecture, with minimal configuration, migrations get executed automatically on service startup ensuring the database schema is always up to date.
+For database versioning and schema migrations, I chose Flyway over Liquibase because it provides a simple and friendly way to manage database changes in a small microservice architecture, also, we won't be needing the unnecessary complexity that Liquidbase provides to this small application.
 
 #### TestContainers
 
