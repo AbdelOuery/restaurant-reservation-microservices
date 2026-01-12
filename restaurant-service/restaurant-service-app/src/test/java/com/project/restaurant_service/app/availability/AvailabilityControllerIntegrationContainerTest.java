@@ -17,6 +17,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -38,32 +40,67 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 class AvailabilityControllerIntegrationContainerTest {
 
+    static Network network = Network.newNetwork();
+
+    @Container
+    static PostgreSQLContainer<?> restaurantPostgres = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgres:15-alpine"))
+            .withDatabaseName("restaurant_test_db")
+            .withUsername("test")
+            .withPassword("test")
+            .withNetwork(network)
+            .withNetworkAliases("restaurant-postgres");
+
+    @Container
+    static PostgreSQLContainer<?> reservationPostgres = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgres:15-alpine"))
+            .withDatabaseName("reservation_test_db")
+            .withUsername("test")
+            .withPassword("test")
+            .withNetwork(network)
+            .withNetworkAliases("reservation-postgres");
+
     @Container
     static GenericContainer<?> reservationServiceContainer = new GenericContainer<>(
             DockerImageName.parse("reservation-service:latest"))
             .withExposedPorts(8082)
+            .withNetwork(network)
             .withEnv("SPRING_PROFILES_ACTIVE", "test")
             .withEnv("EUREKA_CLIENT_ENABLED", "false")
-            .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:reservation-test-db")
+            .withEnv("EUREKA_CLIENT_REGISTERWITHEUREKA", "false")
+            .withEnv("EUREKA_CLIENT_FETCHREGISTRY", "false")
+            .withEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://reservation-postgres:5432/reservation_test_db")
+            .withEnv("SPRING_DATASOURCE_USERNAME", "test")
+            .withEnv("SPRING_DATASOURCE_PASSWORD", "test")
+            .withEnv("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.postgresql.Driver")
+            .withEnv("SPRING_JPA_DATABASE_PLATFORM", "org.hibernate.dialect.PostgreSQLDialect")
             .withEnv("SPRING_JPA_HIBERNATE_DDL_AUTO", "create-drop")
+            .dependsOn(reservationPostgres)
             .waitingFor(Wait.forHttp("/actuator/health")
                     .forPort(8082)
                     .withStartupTimeout(Duration.ofMinutes(3)));
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", restaurantPostgres::getJdbcUrl);
+        registry.add("spring.datasource.username", restaurantPostgres::getUsername);
+        registry.add("spring.datasource.password", restaurantPostgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+
         // Disable Eureka
         registry.add("eureka.client.enabled", () -> "false");
         registry.add("eureka.client.registerWithEureka", () -> "false");
         registry.add("eureka.client.fetchRegistry", () -> "false");
 
-        // Point Feign client to Testcontainer
+        // Point Feign client to reservation-service Testcontainer
         String reservationServiceUrl = String.format(
                 "http://%s:%d",
                 reservationServiceContainer.getHost(),
                 reservationServiceContainer.getMappedPort(8082)
         );
-        registry.add("feign.client.config.reservation-service.url", () -> reservationServiceUrl);
+        registry.add("reservation-service.url", () -> reservationServiceUrl);
     }
 
     @Autowired

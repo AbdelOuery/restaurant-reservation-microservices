@@ -1,4 +1,42 @@
 services:
+  postgres-restaurant:
+    image: postgres:15-alpine
+    container_name: postgres-restaurant
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=restaurant_db
+    volumes:
+      - postgres-restaurant-data:/var/lib/postgresql/data
+    networks:
+      - restaurant-reservation-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-reservation:
+    image: postgres:15-alpine
+    container_name: postgres-reservation
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=reservation_db
+    volumes:
+      - postgres-reservation-data:/var/lib/postgresql/data
+    networks:
+      - restaurant-reservation-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   eureka-server:
     build:
       context: ./eureka-server
@@ -36,7 +74,10 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_INSTANCE_INSTANCEID=restaurant-service-1
     depends_on:
-      - eureka-server
+      postgres-restaurant:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - restaurant-reservation-network
 
@@ -51,7 +92,10 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_INSTANCE_INSTANCEID=restaurant-service-2
     depends_on:
-      - eureka-server
+      postgres-restaurant:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - restaurant-reservation-network
 
@@ -66,7 +110,10 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_INSTANCE_INSTANCEID=reservation-service-1
     depends_on:
-      - eureka-server
+      postgres-reservation:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - restaurant-reservation-network
 
@@ -81,10 +128,17 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_INSTANCE_INSTANCEID=reservation-service-2
     depends_on:
-      - eureka-server
+      postgres-reservation:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
     networks:
       - restaurant-reservation-network
 
 networks:
   restaurant-reservation-network:
     driver: bridge
+
+volumes:
+  postgres-restaurant-data:
+  postgres-reservation-data:

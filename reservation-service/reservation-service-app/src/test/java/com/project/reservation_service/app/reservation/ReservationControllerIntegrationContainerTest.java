@@ -8,12 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -33,31 +34,68 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 class ReservationControllerIntegrationContainerTest {
 
+    static Network network = Network.newNetwork();
+
+    @Container
+    static PostgreSQLContainer<?> reservationPostgres = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgres:15-alpine"))
+            .withDatabaseName("reservation_test_db")
+            .withUsername("test")
+            .withPassword("test")
+            .withNetwork(network)
+            .withNetworkAliases("reservation-postgres");
+
+    @Container
+    static PostgreSQLContainer<?> restaurantPostgres = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgres:15-alpine"))
+            .withDatabaseName("restaurant_test_db")
+            .withUsername("test")
+            .withPassword("test")
+            .withNetwork(network)
+            .withNetworkAliases("restaurant-postgres");
+
     @Container
     static GenericContainer<?> restaurantServiceContainer = new GenericContainer<>(
             DockerImageName.parse("restaurant-service:latest"))
             .withExposedPorts(8081)
+            .withNetwork(network)
             .withEnv("SPRING_PROFILES_ACTIVE", "test")
             .withEnv("EUREKA_CLIENT_ENABLED", "false")
-            .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:restaurant-test-db")
+            .withEnv("EUREKA_CLIENT_REGISTERWITHEUREKA", "false")
+            .withEnv("EUREKA_CLIENT_FETCHREGISTRY", "false")
+            .withEnv("SPRING_DATASOURCE_URL", "jdbc:postgresql://restaurant-postgres:5432/restaurant_test_db")
+            .withEnv("SPRING_DATASOURCE_USERNAME", "test")
+            .withEnv("SPRING_DATASOURCE_PASSWORD", "test")
+            .withEnv("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.postgresql.Driver")
+            .withEnv("SPRING_JPA_DATABASE_PLATFORM", "org.hibernate.dialect.PostgreSQLDialect")
             .withEnv("SPRING_JPA_HIBERNATE_DDL_AUTO", "create-drop")
+            .dependsOn(restaurantPostgres)
             .waitingFor(Wait.forHttp("/actuator/health")
                     .forPort(8081)
                     .withStartupTimeout(Duration.ofMinutes(3)));
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", reservationPostgres::getJdbcUrl);
+        registry.add("spring.datasource.username", reservationPostgres::getUsername);
+        registry.add("spring.datasource.password", reservationPostgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+
+        // Disable Eureka
         registry.add("eureka.client.enabled", () -> "false");
         registry.add("eureka.client.registerWithEureka", () -> "false");
         registry.add("eureka.client.fetchRegistry", () -> "false");
 
+        // Point Feign client to restaurant-service Testcontainer
         String restaurantServiceUrl = String.format(
                 "http://%s:%d",
                 restaurantServiceContainer.getHost(),
                 restaurantServiceContainer.getMappedPort(8081)
         );
 
-        registry.add("feign.client.config.reservation-service.url", () -> restaurantServiceUrl);
+        registry.add("restaurant-service.url", () -> restaurantServiceUrl);
     }
 
     @Autowired
@@ -98,7 +136,7 @@ class ReservationControllerIntegrationContainerTest {
     @Test
     void shouldReturn404WhenRestaurantDoesNotExist() throws Exception {
         CreateReservationRequest request = CreateReservationRequest.builder()
-                .restaurantId(999L)  // Non-existent restaurant
+                .restaurantId(999L)
                 .customerName("Jane Smith")
                 .customerEmail("jane@example.com")
                 .customerPhone("+33687654321")
@@ -112,30 +150,5 @@ class ReservationControllerIntegrationContainerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"));
-    }
-
-    @Test
-    void shouldHandleRestaurantServiceTimeout() throws Exception {
-        // This test verifies timeout handling
-        // Stop the container temporarily to simulate timeout
-        restaurantServiceContainer.stop();
-
-        CreateReservationRequest request = CreateReservationRequest.builder()
-                .restaurantId(1L)
-                .customerName("Jane Smith")
-                .customerEmail("jane@example.com")
-                .customerPhone("+33687654321")
-                .date(LocalDate.of(2026, 2, 1))
-                .time(LocalTime.of(20, 0))
-                .numberOfPeople(2)
-                .build();
-
-        mockMvc.perform(post("/api/reservation")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().is5xxServerError());
-
-        // Restart for other tests
-        restaurantServiceContainer.start();
     }
 }

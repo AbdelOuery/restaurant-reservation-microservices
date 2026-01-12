@@ -6,26 +6,28 @@ spring:
     name: restaurant-service
 
   datasource:
-    generate-unique-name: false
-    name: restaurant-service
-    url: jdbc:h2:mem:restaurant-db
-    username: sa
-    password:
+    url: jdbc:postgresql://postgres-restaurant:5432/restaurant_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        format_sql: false
-
-  h2:
-    console:
-      enabled: true
-      settings:
-        web-allow-others: true
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
 
   cloud:
     loadbalancer:
