@@ -100,7 +100,7 @@ We could also test every service directly using Swagger UI.
 
 ### Reservation Test Scenario
 
-I have inserted some sample data comprising of some restaurants and tables in the **restaurant-service**, the user can make a reservation by calling the **reservation-service** endpoint, we can then call other endpoints to confirm or cancel the restaurant.
+I have inserted some sample data comprising of some restaurants and tables in the **restaurant-service**, the user can make a reservation by calling the **reservation-service** endpoint, we can then call other endpoints to confirm or cancel reservations etc. (Consult the Swagger UI for more...)
 
 ## Architecture & Technical decisions
 
